@@ -40,7 +40,7 @@ fun AchievementsScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "GATE BADGES",
+                text = "ACHIEVEMENTS",
                 fontSize = 11.sp,
                 fontFamily = FontFamily.Monospace,
                 color = Color(0xFF71717A)
@@ -84,6 +84,12 @@ fun AchievementsScreen(
                             text = badge.title,
                             fontSize = 12.sp,
                             color = if (isUnlocked) Color.White else Color(0xFF71717A)
+                        )
+                        Text(
+                            text = badge.description,
+                            fontSize = 9.sp,
+                            color = Color(0xFF71717A),
+                            maxLines = 2
                         )
                         Text(
                             text = if (isUnlocked) "+${badge.xpReward} XP" else "${badge.progress}/${badge.maxProgress}",

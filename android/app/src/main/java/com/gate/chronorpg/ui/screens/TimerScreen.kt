@@ -1,6 +1,7 @@
 package com.gate.chronorpg.ui.screens
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -22,7 +23,8 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.gate.chronorpg.model.SubjectCategory
+import com.gate.chronorpg.model.ExamTrack
+import com.gate.chronorpg.model.subjectsFor
 import com.gate.chronorpg.ui.theme.PureBlack
 import com.gate.chronorpg.ui.theme.SubtleSlate
 import com.gate.chronorpg.viewmodel.PomodoroViewModel
@@ -36,6 +38,10 @@ fun TimerScreen(
     val timerState by viewModel.timerState.collectAsState()
     val isWork = timerState.isWorkMode
     val accentColor = SubtleSlate
+    var showDurationDialog by remember { mutableStateOf(false) }
+    var durationInput by remember(timerState.workDurationMinutes) {
+        mutableStateOf(timerState.workDurationMinutes.toString())
+    }
 
     Column(
         modifier = modifier
@@ -45,26 +51,26 @@ fun TimerScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceBetween
     ) {
-        // 1. Subject Category Dropdown
+        // 1. Exam and subject selection
         Column(modifier = Modifier.fillMaxWidth()) {
             Text(
-                text = "GATE SUBJECT CATEGORY",
+                text = "EXAM TRACK",
                 style = MaterialTheme.typography.labelSmall,
                 color = Color(0xFF71717A),
                 fontFamily = FontFamily.Monospace
             )
             Spacer(modifier = Modifier.height(6.dp))
 
-            var expanded by remember { mutableStateOf(false) }
+            var examExpanded by remember { mutableStateOf(false) }
             ExposedDropdownMenuBox(
-                expanded = expanded,
-                onExpandedChange = { expanded = !expanded }
+                expanded = examExpanded,
+                onExpandedChange = { examExpanded = !examExpanded }
             ) {
                 OutlinedTextField(
-                    value = timerState.selectedCategory.displayName,
+                    value = timerState.selectedExam.displayName,
                     onValueChange = {},
                     readOnly = true,
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = examExpanded) },
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = Color(0xFF3F3F46),
                         unfocusedBorderColor = Color(0xFF27272A),
@@ -78,19 +84,130 @@ fun TimerScreen(
                         .fillMaxWidth()
                 )
                 ExposedDropdownMenu(
-                    expanded = expanded,
-                    onDismissRequest = { expanded = false },
+                    expanded = examExpanded,
+                    onDismissRequest = { examExpanded = false },
                     modifier = Modifier.background(Color(0xFF09090B))
                 ) {
-                    SubjectCategory.values().forEach { category ->
+                    ExamTrack.values().forEach { exam ->
                         DropdownMenuItem(
-                            text = { Text(category.displayName, color = Color.White) },
+                            text = { Text(exam.displayName, color = Color.White) },
                             onClick = {
-                                viewModel.selectCategory(category)
-                                expanded = false
+                                viewModel.selectExam(exam)
+                                examExpanded = false
                             }
                         )
                     }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+            OutlinedButton(
+                onClick = {
+                    durationInput = timerState.workDurationMinutes.toString()
+                    showDurationDialog = true
+                },
+                enabled = !timerState.isRunning && timerState.isWorkMode,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = Color.White,
+                    disabledContentColor = Color(0xFF52525B)
+                ),
+                border = BorderStroke(
+                    1.dp,
+                    if (!timerState.isRunning && timerState.isWorkMode) Color(0xFF3F3F46) else Color(0xFF27272A)
+                )
+            ) {
+                Text(
+                    text = "SESSION LENGTH  ·  ${timerState.workDurationMinutes} MIN",
+                    fontFamily = FontFamily.Monospace,
+                    fontSize = 11.sp
+                )
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+            Text(
+                text = "SUBJECT",
+                style = MaterialTheme.typography.labelSmall,
+                color = Color(0xFF71717A),
+                fontFamily = FontFamily.Monospace
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+
+            var subjectExpanded by remember { mutableStateOf(false) }
+            ExposedDropdownMenuBox(
+                expanded = subjectExpanded,
+                onExpandedChange = { subjectExpanded = !subjectExpanded }
+            ) {
+                OutlinedTextField(
+                    value = timerState.selectedTopic,
+                    onValueChange = {},
+                    readOnly = true,
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = subjectExpanded) },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color(0xFF3F3F46),
+                        unfocusedBorderColor = Color(0xFF27272A),
+                        focusedContainerColor = Color(0xFF09090B),
+                        unfocusedContainerColor = Color(0xFF09090B),
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White
+                    ),
+                    modifier = Modifier.menuAnchor().fillMaxWidth()
+                )
+                ExposedDropdownMenu(
+                    expanded = subjectExpanded,
+                    onDismissRequest = { subjectExpanded = false },
+                    modifier = Modifier.background(Color(0xFF09090B))
+                ) {
+                    subjectsFor(timerState.selectedExam).forEach { subject ->
+                        DropdownMenuItem(
+                            text = { Text(subject, color = Color.White) },
+                            onClick = {
+                                viewModel.selectTopic(subject)
+                                subjectExpanded = false
+                            }
+                        )
+                    }
+                }
+
+                if (showDurationDialog) {
+                    AlertDialog(
+                        onDismissRequest = { showDurationDialog = false },
+                        title = { Text("Session length") },
+                        text = {
+                            Column {
+                                Text(
+                                    text = "Choose 1–180 minutes. The default is 25 minutes.",
+                                    color = Color(0xFFA1A1AA)
+                                )
+                                Spacer(modifier = Modifier.height(12.dp))
+                                OutlinedTextField(
+                                    value = durationInput,
+                                    onValueChange = { value ->
+                                        if (value.all(Char::isDigit) && value.length <= 3) {
+                                            durationInput = value
+                                        }
+                                    },
+                                    singleLine = true,
+                                    label = { Text("Minutes") }
+                                )
+                            }
+                        },
+                        confirmButton = {
+                            TextButton(
+                                onClick = {
+                                    durationInput.toIntOrNull()?.let(viewModel::setWorkDuration)
+                                    showDurationDialog = false
+                                }
+                            ) {
+                                Text("Save")
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { showDurationDialog = false }) {
+                                Text("Cancel")
+                            }
+                        }
+                    )
                 }
             }
         }
