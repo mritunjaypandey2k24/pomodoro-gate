@@ -1,10 +1,90 @@
 package com.gate.chronorpg.model
 
-enum class SubjectCategory(val displayName: String) {
-    ENGINEERING_MATH("Engineering Mathematics"),
-    CORE_TECHNICAL("Core Technical"),
-    GENERAL_APTITUDE("General Aptitude")
+enum class ExamTrack(val displayName: String) {
+    DA("GATE DA · Data Science & AI"),
+    CS("GATE CS · Computer Science"),
+    EC("GATE EC · Electronics & Communication"),
+    EE("GATE EE · Electrical Engineering"),
+    ME("GATE ME · Mechanical Engineering"),
+    CE("GATE CE · Civil Engineering")
 }
+
+fun subjectsFor(exam: ExamTrack): List<String> = when (exam) {
+    ExamTrack.DA -> listOf(
+        "Probability & Statistics",
+        "Linear Algebra",
+        "Calculus & Optimization",
+        "Programming in Python & Data Structures",
+        "Algorithms",
+        "Database Management Systems",
+        "Machine Learning",
+        "Artificial Intelligence",
+        "General Aptitude"
+    )
+    ExamTrack.CS -> listOf(
+        "Engineering Mathematics",
+        "Digital Logic",
+        "Computer Organization",
+        "Programming & Data Structures",
+        "Algorithms",
+        "Theory of Computation",
+        "Compiler Design",
+        "Operating Systems",
+        "Databases",
+        "Computer Networks",
+        "General Aptitude"
+    )
+    ExamTrack.EC -> listOf(
+        "Engineering Mathematics",
+        "Networks",
+        "Signals & Systems",
+        "Electronic Devices",
+        "Analog Circuits",
+        "Digital Circuits",
+        "Control Systems",
+        "Communications",
+        "Electromagnetics",
+        "General Aptitude"
+    )
+    ExamTrack.EE -> listOf(
+        "Engineering Mathematics",
+        "Electric Circuits",
+        "Electromagnetic Fields",
+        "Signals & Systems",
+        "Electrical Machines",
+        "Power Systems",
+        "Control Systems",
+        "Measurements",
+        "Power Electronics",
+        "General Aptitude"
+    )
+    ExamTrack.ME -> listOf(
+        "Engineering Mathematics",
+        "Applied Mechanics",
+        "Engineering Materials",
+        "Theory of Machines",
+        "Thermodynamics",
+        "Fluid Mechanics",
+        "Heat Transfer",
+        "Manufacturing",
+        "Industrial Engineering",
+        "General Aptitude"
+    )
+    ExamTrack.CE -> listOf(
+        "Engineering Mathematics",
+        "Structural Engineering",
+        "Geotechnical Engineering",
+        "Water Resources",
+        "Environmental Engineering",
+        "Transportation Engineering",
+        "Geomatics",
+        "Construction Management",
+        "Engineering Geology",
+        "General Aptitude"
+    )
+}
+
+typealias SubjectCategory = String
 
 data class GateLevel(
     val level: Int,

@@ -18,7 +18,6 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.gate.chronorpg.model.SubjectCategory
 import com.gate.chronorpg.ui.theme.PureBlack
 import com.gate.chronorpg.ui.theme.SubtleSlate
 import com.gate.chronorpg.viewmodel.PomodoroViewModel
@@ -69,6 +68,11 @@ fun HeroProfileScreen(
                                 text = heroState.currentLevel.perk,
                                 fontSize = 12.sp,
                                 color = Color(0xFFA1A1AA)
+                            )
+                            Text(
+                                text = heroState.selectedExam.displayName,
+                                fontSize = 11.sp,
+                                color = Color(0xFF71717A)
                             )
                         }
                         Text(
@@ -201,9 +205,8 @@ fun HeroProfileScreen(
             )
         }
 
-        items(SubjectCategory.values().size) { idx ->
-            val cat = SubjectCategory.values()[idx]
-            val xp = heroState.subjectXpMap[cat] ?: 0
+        items(heroState.subjectXpMap.entries.toList()) { entry ->
+            val xp = entry.value
             Card(
                 colors = CardDefaults.cardColors(containerColor = Color(0xFF09090B)),
                 shape = RoundedCornerShape(14.dp),
@@ -217,7 +220,7 @@ fun HeroProfileScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column {
-                        Text(text = cat.displayName, fontSize = 13.sp, color = Color.White)
+                        Text(text = entry.key, fontSize = 13.sp, color = Color.White)
                         Text(text = "${xp / 100} sessions", fontSize = 11.sp, color = Color(0xFF71717A))
                     }
                     Text(
