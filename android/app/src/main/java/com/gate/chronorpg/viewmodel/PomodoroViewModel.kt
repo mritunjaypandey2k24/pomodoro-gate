@@ -35,13 +35,21 @@ data class HeroUiState(
     val totalXp: Int = 0,
     val currentLevel: GateLevel = GATE_LEVELS[0],
     val nextLevel: GateLevel? = GATE_LEVELS[1],
-    val levelProgress: Float = 0f,
     val completedSessions: Int = 0,
     val dailyGoal: Int = 6,
     val todaySessionsCount: Int = 0,
     val selectedExam: ExamTrack = ExamTrack.DA,
     val subjectXpMap: Map<String, Int> = subjectsFor(ExamTrack.DA).associateWith { 0 }
-)
+) {
+    val levelProgress: Float
+        get() {
+            val next = nextLevel ?: return 1f
+            val levelSpan = next.minXp - currentLevel.minXp
+            if (levelSpan <= 0) return 0f
+            return ((totalXp - currentLevel.minXp).toFloat() / levelSpan)
+                .coerceIn(0f, 1f)
+        }
+}
 
 class PomodoroViewModel : ViewModel() {
     private val _timerState = MutableStateFlow(TimerUiState())
@@ -155,15 +163,10 @@ class PomodoroViewModel : ViewModel() {
                 }
             }
             val nextLvl = GATE_LEVELS.firstOrNull { it.level == lvl.level + 1 }
-            val progressFrac = if (nextLvl != null) {
-                ((newXp - lvl.minXp).toFloat() / (nextLvl.minXp - lvl.minXp).toFloat()).coerceIn(0f, 1f)
-            } else 1f
-
             _heroState.value = _heroState.value.copy(
                 totalXp = newXp,
                 currentLevel = lvl,
                 nextLevel = nextLvl,
-                levelProgress = progressFrac,
                 completedSessions = newCompleted,
                 todaySessionsCount = newTodayCount,
                 subjectXpMap = updatedSubjectMap
