@@ -1,0 +1,6 @@
+{
+  "name": "GATE ChronoRPG",
+  "description": "Gamified sci-fi Pomodoro timer and RPG leveling app for GATE exam aspirants with subject tracking, XP progression, and achievement badges.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
