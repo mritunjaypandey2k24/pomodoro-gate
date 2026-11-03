@@ -1,6 +1,7 @@
 package com.gate.chronorpg.ui.screens
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -37,6 +38,10 @@ fun TimerScreen(
     val timerState by viewModel.timerState.collectAsState()
     val isWork = timerState.isWorkMode
     val accentColor = SubtleSlate
+    var showDurationDialog by remember { mutableStateOf(false) }
+    var durationInput by remember(timerState.workDurationMinutes) {
+        mutableStateOf(timerState.workDurationMinutes.toString())
+    }
 
     Column(
         modifier = modifier
@@ -96,6 +101,30 @@ fun TimerScreen(
             }
 
             Spacer(modifier = Modifier.height(10.dp))
+            OutlinedButton(
+                onClick = {
+                    durationInput = timerState.workDurationMinutes.toString()
+                    showDurationDialog = true
+                },
+                enabled = !timerState.isRunning && timerState.isWorkMode,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = Color.White,
+                    disabledContentColor = Color(0xFF52525B)
+                ),
+                border = BorderStroke(
+                    1.dp,
+                    if (!timerState.isRunning && timerState.isWorkMode) Color(0xFF3F3F46) else Color(0xFF27272A)
+                )
+            ) {
+                Text(
+                    text = "SESSION LENGTH  ·  ${timerState.workDurationMinutes} MIN",
+                    fontFamily = FontFamily.Monospace,
+                    fontSize = 11.sp
+                )
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
             Text(
                 text = "SUBJECT",
                 style = MaterialTheme.typography.labelSmall,
@@ -138,6 +167,47 @@ fun TimerScreen(
                             }
                         )
                     }
+                }
+
+                if (showDurationDialog) {
+                    AlertDialog(
+                        onDismissRequest = { showDurationDialog = false },
+                        title = { Text("Session length") },
+                        text = {
+                            Column {
+                                Text(
+                                    text = "Choose 1–180 minutes. The default is 25 minutes.",
+                                    color = Color(0xFFA1A1AA)
+                                )
+                                Spacer(modifier = Modifier.height(12.dp))
+                                OutlinedTextField(
+                                    value = durationInput,
+                                    onValueChange = { value ->
+                                        if (value.all(Char::isDigit) && value.length <= 3) {
+                                            durationInput = value
+                                        }
+                                    },
+                                    singleLine = true,
+                                    label = { Text("Minutes") }
+                                )
+                            }
+                        },
+                        confirmButton = {
+                            TextButton(
+                                onClick = {
+                                    durationInput.toIntOrNull()?.let(viewModel::setWorkDuration)
+                                    showDurationDialog = false
+                                }
+                            ) {
+                                Text("Save")
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { showDurationDialog = false }) {
+                                Text("Cancel")
+                            }
+                        }
+                    )
                 }
             }
         }

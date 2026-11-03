@@ -13,6 +13,7 @@ import kotlinx.coroutines.launch
 data class TimerUiState(
     val timeLeftSeconds: Int = 25 * 60,
     val totalDurationSeconds: Int = 25 * 60,
+    val workDurationMinutes: Int = 25,
     val isRunning: Boolean = false,
     val isWorkMode: Boolean = true,
     val selectedExam: ExamTrack = ExamTrack.DA,
@@ -82,6 +83,16 @@ class PomodoroViewModel : ViewModel() {
         _timerState.value = _timerState.value.copy(selectedTopic = topic)
     }
 
+    fun setWorkDuration(minutes: Int) {
+        if (_timerState.value.isRunning) return
+        val safeMinutes = minutes.coerceIn(1, 180)
+        _timerState.value = _timerState.value.copy(
+            workDurationMinutes = safeMinutes,
+            timeLeftSeconds = safeMinutes * 60,
+            totalDurationSeconds = safeMinutes * 60
+        )
+    }
+
     fun toggleTimer() {
         if (_timerState.value.isRunning) {
             pauseTimer()
@@ -109,7 +120,11 @@ class PomodoroViewModel : ViewModel() {
 
     fun resetTimer() {
         pauseTimer()
-        val duration = if (_timerState.value.isWorkMode) 25 * 60 else 5 * 60
+        val duration = if (_timerState.value.isWorkMode) {
+            _timerState.value.workDurationMinutes * 60
+        } else {
+            5 * 60
+        }
         _timerState.value = _timerState.value.copy(timeLeftSeconds = duration)
     }
 
@@ -169,8 +184,8 @@ class PomodoroViewModel : ViewModel() {
             // Switch back to work
             _timerState.value = _timerState.value.copy(
                 isWorkMode = true,
-                timeLeftSeconds = 25 * 60,
-                totalDurationSeconds = 25 * 60,
+                timeLeftSeconds = current.workDurationMinutes * 60,
+                totalDurationSeconds = current.workDurationMinutes * 60,
                 isRunning = false
             )
         }
