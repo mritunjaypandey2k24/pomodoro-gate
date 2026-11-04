@@ -112,22 +112,6 @@ fun HeroProfileScreen(
                             color = Color.White
                         )
                     }
-                    Spacer(modifier = Modifier.height(8.dp))
-                    LinearProgressIndicator(
-                        progress = {
-                            if (heroState.totalXp > 0) {
-                                (xp.toFloat() / heroState.totalXp.toFloat()).coerceIn(0f, 1f)
-                            } else {
-                                0f
-                            }
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(5.dp)
-                            .clip(RoundedCornerShape(3.dp)),
-                        color = SubtleSlate,
-                        trackColor = Color(0xFF18181B)
-                    )
                 }
             }
         }
@@ -247,6 +231,22 @@ fun HeroProfileScreen(
                         color = Color(0xFFA1A1AA)
                     )
                 }
+                Spacer(modifier = Modifier.height(8.dp))
+                LinearProgressIndicator(
+                    progress = {
+                        if (heroState.totalXp > 0) {
+                            (xp.toFloat() / heroState.totalXp.toFloat()).coerceIn(0f, 1f)
+                        } else {
+                            0f
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(5.dp)
+                        .clip(RoundedCornerShape(3.dp)),
+                    color = SubtleSlate,
+                    trackColor = Color(0xFF18181B)
+                )
             }
         }
     }
