@@ -18,10 +18,15 @@ data class TimerUiState(
     val isWorkMode: Boolean = true,
     val selectedExam: ExamTrack = ExamTrack.DA,
     val selectedTopic: String = subjectsFor(ExamTrack.DA).first(),
-    val currentStreak: Int = 0
+    val currentStreak: Int = 0,
+    val completedSessions: Int = 0
 ) {
     val progress: Float
-        get() = (1f - (timeLeftSeconds.toFloat() / totalDurationSeconds.toFloat())).coerceIn(0f, 1f)
+        get() = if (totalDurationSeconds > 0) {
+            (timeLeftSeconds.toFloat() / totalDurationSeconds.toFloat()).coerceIn(0f, 1f)
+        } else {
+            0f
+        }
 
     val formattedTime: String
         get() {
@@ -72,9 +77,13 @@ class PomodoroViewModel : ViewModel() {
     )
     val achievements: StateFlow<List<Achievement>> = _achievements.asStateFlow()
 
+    private val _sessionCompleted = MutableStateFlow(false)
+    val sessionCompleted: StateFlow<Boolean> = _sessionCompleted.asStateFlow()
+
     private var timerJob: Job? = null
 
     fun selectExam(exam: ExamTrack) {
+        if (_timerState.value.isRunning) return
         val topics = subjectsFor(exam)
         _timerState.value = _timerState.value.copy(
             selectedExam = exam,
@@ -88,6 +97,7 @@ class PomodoroViewModel : ViewModel() {
     }
 
     fun selectTopic(topic: String) {
+        if (_timerState.value.isRunning) return
         _timerState.value = _timerState.value.copy(selectedTopic = topic)
     }
 
@@ -131,9 +141,12 @@ class PomodoroViewModel : ViewModel() {
         val duration = if (_timerState.value.isWorkMode) {
             _timerState.value.workDurationMinutes * 60
         } else {
-            5 * 60
+            _timerState.value.totalDurationSeconds
         }
-        _timerState.value = _timerState.value.copy(timeLeftSeconds = duration)
+        _timerState.value = _timerState.value.copy(
+            timeLeftSeconds = duration,
+            totalDurationSeconds = duration
+        )
     }
 
     fun fastForwardComplete() {
@@ -141,11 +154,22 @@ class PomodoroViewModel : ViewModel() {
         onSessionFinished()
     }
 
+    fun skipBreak() {
+        if (!_timerState.value.isWorkMode) {
+            pauseTimer()
+            switchToWork()
+        }
+    }
+
+    fun clearSessionCompletedEvent() {
+        _sessionCompleted.value = false
+    }
+
     private fun onSessionFinished() {
         val current = _timerState.value
         if (current.isWorkMode) {
             // Award +100 XP
-            val xpGain = 100
+            val xpGain = XP_PER_SESSION
             val newXp = _heroState.value.totalXp + xpGain
             val newCompleted = _heroState.value.completedSessions + 1
             val newStreak = current.currentStreak + 1
@@ -181,17 +205,25 @@ class PomodoroViewModel : ViewModel() {
                 timeLeftSeconds = 5 * 60,
                 totalDurationSeconds = 5 * 60,
                 isRunning = false,
-                currentStreak = newStreak
+                currentStreak = newStreak,
+                completedSessions = newCompleted
             )
+            _sessionCompleted.value = true
         } else {
             // Switch back to work
-            _timerState.value = _timerState.value.copy(
-                isWorkMode = true,
-                timeLeftSeconds = current.workDurationMinutes * 60,
-                totalDurationSeconds = current.workDurationMinutes * 60,
-                isRunning = false
-            )
+            switchToWork()
+            _sessionCompleted.value = true
         }
+    }
+
+    private fun switchToWork() {
+        val duration = _timerState.value.workDurationMinutes * 60
+        _timerState.value = _timerState.value.copy(
+            isWorkMode = true,
+            timeLeftSeconds = duration,
+            totalDurationSeconds = duration,
+            isRunning = false
+        )
     }
 
     private fun updateAchievements(completed: Int, streak: Int, xp: Int, subjectXp: Map<String, Int>) {

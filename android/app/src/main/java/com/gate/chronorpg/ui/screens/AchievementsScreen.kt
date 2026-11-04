@@ -58,7 +58,8 @@ fun AchievementsScreen(
         LazyVerticalGrid(
             columns = GridCells.Fixed(2),
             horizontalArrangement = Arrangement.spacedBy(10.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+            modifier = Modifier.weight(1f)
         ) {
             items(achievements) { badge ->
                 val isUnlocked = badge.isUnlocked
@@ -97,6 +98,17 @@ fun AchievementsScreen(
                             fontFamily = FontFamily.Monospace,
                             color = Color(0xFFA1A1AA)
                         )
+                        if (!isUnlocked && badge.maxProgress > 1) {
+                            Spacer(modifier = Modifier.height(6.dp))
+                            LinearProgressIndicator(
+                                progress = { badge.progress.toFloat() / badge.maxProgress.toFloat() },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(4.dp),
+                                color = Color(0xFF64748B),
+                                trackColor = Color(0xFF18181B)
+                            )
+                        }
                     }
                 }
             }

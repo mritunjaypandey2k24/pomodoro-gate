@@ -18,3 +18,7 @@ From the top menu bar in Android Studio:
 ### 3. Install on Phone
 - Transfer `app-debug.apk` to your Android device via USB cable, Google Drive, or WhatsApp.
 - Tap the `.apk` file on your phone and select **Install**.
+
+## Lock-screen / Always-on timer
+
+When notifications are allowed, starting a timer creates an ongoing foreground notification with the remaining time. It can remain visible while the display is off and on supported lock screens or Always-on displays. The exact AOD presentation is controlled by the phone's system notification and lock-screen settings.

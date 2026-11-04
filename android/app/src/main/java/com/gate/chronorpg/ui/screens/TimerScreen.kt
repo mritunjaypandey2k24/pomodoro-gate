@@ -8,10 +8,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.FastForward
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -24,6 +24,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.gate.chronorpg.model.ExamTrack
+import com.gate.chronorpg.model.XP_PER_SESSION
 import com.gate.chronorpg.model.subjectsFor
 import com.gate.chronorpg.ui.theme.PureBlack
 import com.gate.chronorpg.ui.theme.SubtleSlate
@@ -36,11 +37,54 @@ fun TimerScreen(
     modifier: Modifier = Modifier
 ) {
     val timerState by viewModel.timerState.collectAsState()
+    val sessionCompleted by viewModel.sessionCompleted.collectAsState()
     val isWork = timerState.isWorkMode
     val accentColor = SubtleSlate
     var showDurationDialog by remember { mutableStateOf(false) }
+    var showResetConfirmation by remember { mutableStateOf(false) }
     var durationInput by remember(timerState.workDurationMinutes) {
         mutableStateOf(timerState.workDurationMinutes.toString())
+    }
+
+    if (sessionCompleted) {
+        AlertDialog(
+            onDismissRequest = viewModel::clearSessionCompletedEvent,
+            confirmButton = {
+                TextButton(onClick = viewModel::clearSessionCompletedEvent) {
+                    Text("OK")
+                }
+            },
+            title = {
+                Text(if (isWork) "Break complete" else "Focus session complete")
+            },
+            text = {
+                Text(
+                    if (isWork) "Your break is over. Ready for another focused session?"
+                    else "Great work. Your XP has been added and your break is ready."
+                )
+            }
+        )
+    }
+
+    if (showResetConfirmation) {
+        AlertDialog(
+            onDismissRequest = { showResetConfirmation = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.resetTimer()
+                    showResetConfirmation = false
+                }) {
+                    Text("Reset")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showResetConfirmation = false }) {
+                    Text("Cancel")
+                }
+            },
+            title = { Text("Reset timer?") },
+            text = { Text("Current session progress will be lost.") }
+        )
     }
 
     Column(
@@ -64,12 +108,13 @@ fun TimerScreen(
             var examExpanded by remember { mutableStateOf(false) }
             ExposedDropdownMenuBox(
                 expanded = examExpanded,
-                onExpandedChange = { examExpanded = !examExpanded }
+                onExpandedChange = { if (!timerState.isRunning) examExpanded = !examExpanded }
             ) {
                 OutlinedTextField(
                     value = timerState.selectedExam.displayName,
                     onValueChange = {},
                     readOnly = true,
+                    enabled = !timerState.isRunning,
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = examExpanded) },
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = Color(0xFF3F3F46),
@@ -88,7 +133,7 @@ fun TimerScreen(
                     onDismissRequest = { examExpanded = false },
                     modifier = Modifier.background(Color(0xFF09090B))
                 ) {
-                    ExamTrack.values().forEach { exam ->
+                    ExamTrack.entries.forEach { exam ->
                         DropdownMenuItem(
                             text = { Text(exam.displayName, color = Color.White) },
                             onClick = {
@@ -136,12 +181,13 @@ fun TimerScreen(
             var subjectExpanded by remember { mutableStateOf(false) }
             ExposedDropdownMenuBox(
                 expanded = subjectExpanded,
-                onExpandedChange = { subjectExpanded = !subjectExpanded }
+                onExpandedChange = { if (!timerState.isRunning) subjectExpanded = !subjectExpanded }
             ) {
                 OutlinedTextField(
                     value = timerState.selectedTopic,
                     onValueChange = {},
                     readOnly = true,
+                    enabled = !timerState.isRunning,
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = subjectExpanded) },
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = Color(0xFF3F3F46),
@@ -243,7 +289,7 @@ fun TimerScreen(
                     color = Color.White
                 )
                 Text(
-                    text = if (isWork) "+100 XP REWARD" else "REST PERIOD",
+                    text = if (isWork) "+${XP_PER_SESSION} XP REWARD" else "REST PERIOD",
                     fontSize = 11.sp,
                     fontFamily = FontFamily.Monospace,
                     color = Color(0xFFA1A1AA)
@@ -256,6 +302,13 @@ fun TimerScreen(
             }
         }
 
+        Text(
+            text = "Session ${timerState.completedSessions + 1}  •  ${timerState.completedSessions} completed",
+            fontSize = 11.sp,
+            fontFamily = FontFamily.Monospace,
+            color = Color(0xFF71717A)
+        )
+
         // 3. Tactile Minimal Controls
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -263,7 +316,13 @@ fun TimerScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(
-                onClick = { viewModel.resetTimer() },
+                onClick = {
+                    if (timerState.isRunning || timerState.timeLeftSeconds < timerState.totalDurationSeconds) {
+                        showResetConfirmation = true
+                    } else {
+                        viewModel.resetTimer()
+                    }
+                },
                 modifier = Modifier
                     .size(48.dp)
                     .background(Color(0xFF09090B), CircleShape)
@@ -293,13 +352,18 @@ fun TimerScreen(
             Spacer(modifier = Modifier.width(20.dp))
 
             IconButton(
-                onClick = { viewModel.fastForwardComplete() },
+                onClick = { viewModel.skipBreak() },
+                enabled = !isWork,
                 modifier = Modifier
                     .size(48.dp)
-                    .background(Color(0xFF09090B), CircleShape)
+                    .background(if (!isWork) Color(0xFF09090B) else Color.Transparent, CircleShape)
                     .border(1.dp, Color(0xFF27272A), CircleShape)
             ) {
-                Icon(Icons.Default.FastForward, contentDescription = "Test Complete", tint = Color(0xFF71717A))
+                Icon(
+                    Icons.Default.SkipNext,
+                    contentDescription = "Skip break",
+                    tint = if (!isWork) Color.White else Color(0xFF27272A)
+                )
             }
         }
     }

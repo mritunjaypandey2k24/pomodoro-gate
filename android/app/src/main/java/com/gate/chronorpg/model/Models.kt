@@ -1,5 +1,7 @@
 package com.gate.chronorpg.model
 
+const val XP_PER_SESSION = 100
+
 enum class ExamTrack(val displayName: String) {
     DA("GATE DA · Data Science & AI"),
     CS("GATE CS · Computer Science"),
